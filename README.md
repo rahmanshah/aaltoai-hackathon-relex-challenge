@@ -124,11 +124,37 @@ the former. See [decision D23](docs/decisions.md) for the Ollama service and
 
 ## Status
 
-**The archive is in hand** (`input/`, since Friday). Nothing is built yet: the three
-services are skeletons and no code reads a document or calls a model. These documents
-describe the intent so that everyone — and every agent — builds the same thing.
+**Extraction, answering and deletion all run end to end.** Statement extraction reads the
+45-document archive with a local Ollama model and writes the statements file; the backend
+answers questions from that file with citations; deletion resolves a person, redacts every
+spelling everywhere it occurs — including verbatim spans — and the frontend can trigger it
+from a dialog on the page, no restart required. 96 tests pass across the two services
+(64 in `statement_extraction`, 32 in `backend`, including 30 covering deletion alone).
 
 Still open, and tracked in [docs/open-questions.md](docs/open-questions.md): the
-initiative feature, who answers the nine practice questions, and which EU region the
-Verda VM is in. Everything else that was open on Friday is now decided — see
-[D14](docs/decisions.md) through [D19](docs/decisions.md).
+initiative feature, who answers the nine practice questions, which EU region the Verda VM
+is in — residency is enforced structurally (local model, no external APIs) even without a
+named region — and what stops re-extraction or our own tooling from undoing a deletion.
+See [docs/decisions.md](docs/decisions.md) for the full log, D1 through D48.
+
+## My contributions
+
+Branches [`shah/extraction-pipeline`](../../tree/shah/extraction-pipeline) and
+[`shah/deletion`](../../tree/shah/deletion):
+
+- **Statement extraction** — corpus parsers for all three document genres, a verbatim-span
+  matcher that only accepts a quote if it is actually present in the source unit, the
+  Ollama extraction call, and the agreement-linking pass that gives every `agreed_by` entry
+  its own receipt statement (D16–D22). Later ported and adapted onto the main branch's
+  contracts by a teammate (D28).
+- **Deletion** — resolving a person to every surface form they appear under (including a
+  planted spelling split and two people sharing a first name), redacting each one across
+  actor fields, agreed-by parties and verbatim spans, and returning a receipt naming who was
+  removed and who was deliberately left (D37/D42); the CLI command that applies it to the
+  statements file in place (D38/D43); and making the backend re-read the statements file on
+  every request so a deletion shows without a restart (D39/D44).
+
+Moving deletion into the backend service, the `/delete` endpoint, the deletion dialog in the
+frontend, and the later rebase onto a regrouped statements file (D45–D47) were built by a
+teammate on top of this work.
+
