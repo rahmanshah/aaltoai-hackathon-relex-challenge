@@ -11,7 +11,7 @@ what was agreed" and you get a clean, confident, wrong answer: a reversed decisi
 reported as current, a consultant's suggestion reported as a customer agreement, a record
 that was never true repeated as fact.
 
-We are building an agent that answers the same questions and can **show its receipts**.
+We built an agent that answers the same questions and shows its receipts.
 
 The archive is invented — Acme Org is a fictional EMEA grocery retailer, and no RELEX
 customer data is involved. RELEX is named throughout it and the record is unflattering
@@ -22,7 +22,7 @@ record says, not the polite version.
 
 | # | Requirement | Our position |
 |---|---|---|
-| 1 | **Cite everything** — document, and where in it | In scope for the MVP. Every claim carries document, location, and the verbatim span it came from. No citation means we treat it as a guess. |
+| 1 | **Cite everything** — document, and where in it | In scope. Every claim carries its document, speaker and date. Extraction checks each claim's supporting quote against the source text, but the served file no longer stores the quote or its location (D37), a known reduction against this requirement. |
 | 2 | **Suggestion ≠ commitment** | In scope. Extraction records what kind of speech act a statement is, who made it, and for whom they spoke. |
 | 3 | **Know stale from wrong** | Out of scope for the MVP; a second-pass LLM layer that groups and evaluates statements is the agreed successor. See [D4](docs/decisions.md) and [D16](docs/decisions.md). |
 | 4 | **Delete a person** | In scope, with a deliberate and documented interpretation. See [D3](docs/decisions.md) and [D19](docs/decisions.md). |
@@ -40,7 +40,7 @@ Three long-running containers and one job that runs once.
    and the traps they contain: [docs/corpus.md](docs/corpus.md).
 2. **Statement extraction (job).** Walks the documents one at a time, puts each through a
    local LLM, and pulls out every statement it contains — who said it, when, what kind of
-   claim it was, and exactly where in the document it appears. The results from all
+   claim it was, checked against the text it came from. The results from all
    documents are aggregated into a single statements file. This runs once, offline.
 3. **Backend.** A Python/FastAPI service that takes a user question, puts the statements
    file in the model's context, and answers from it — with citations.
@@ -127,7 +127,7 @@ the former. See [decision D23](docs/decisions.md) for the Ollama service and
 **Extraction, answering and deletion all run end to end.** Statement extraction reads the
 45-document archive with a local Ollama model and writes the statements file; the backend
 answers questions from that file with citations; deletion resolves a person, redacts every
-spelling everywhere it occurs — including verbatim spans — and the frontend can trigger it
+spelling everywhere it occurs — including claims, document summaries and participant lists — and the frontend can trigger it
 from a dialog on the page, no restart required. 96 tests pass across the two services
 (64 in `statement_extraction`, 32 in `backend`, including 30 covering deletion alone).
 
@@ -145,14 +145,14 @@ Branches [`shah/extraction-pipeline`](../../tree/shah/extraction-pipeline) and
 - **Statement extraction** — corpus parsers for all three document genres, a verbatim-span
   matcher that only accepts a quote if it is actually present in the source unit, the
   Ollama extraction call, and the agreement-linking pass that gives every `agreed_by` entry
-  its own receipt statement, with 64 tests (D16–D22). Later ported and adapted onto the
-  main branch's contracts by a teammate (D28).
+  its own receipt statement, with 64 tests. Later ported and adapted onto the main branch's
+  contracts by a teammate (D28).
 - **Deletion** — resolving a person to every surface form they appear under (including a
   planted spelling split and two people sharing a first name), redacting each one across
-  actor fields, agreed-by parties and verbatim spans, and returning a receipt naming who was
-  removed and who was deliberately left (D37/D42); the CLI command that applies it to the
-  statements file in place (D38/D43); and making the backend re-read the statements file on
-  every request so a deletion shows without a restart (D39/D44) — 30 tests across the three.
+  every text field in the statements file, and returning a receipt naming who was
+  removed and who was deliberately left; the CLI command that applies it to the
+  statements file in place; and making the backend re-read the statements file on
+  every request so a deletion shows without a restart (D42, D43, D44) — 30 tests across the three.
 
 Moving deletion into the backend service, the `/delete` endpoint, the deletion dialog in the
 frontend, and the later rebase onto a regrouped statements file (D45–D47) were built by a
