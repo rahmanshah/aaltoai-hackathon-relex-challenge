@@ -145,16 +145,15 @@ Branches [`shah/extraction-pipeline`](../../tree/shah/extraction-pipeline) and
 - **Statement extraction** — corpus parsers for all three document genres, a verbatim-span
   matcher that only accepts a quote if it is actually present in the source unit, the
   Ollama extraction call, and the agreement-linking pass that gives every `agreed_by` entry
-  its own receipt statement (D16–D22). Later ported and adapted onto the main branch's
-  contracts by a teammate (D28).
+  its own receipt statement, with 64 tests (D16–D22). Later ported and adapted onto the
+  main branch's contracts by a teammate (D28).
 - **Deletion** — resolving a person to every surface form they appear under (including a
   planted spelling split and two people sharing a first name), redacting each one across
   actor fields, agreed-by parties and verbatim spans, and returning a receipt naming who was
   removed and who was deliberately left (D37/D42); the CLI command that applies it to the
   statements file in place (D38/D43); and making the backend re-read the statements file on
-  every request so a deletion shows without a restart (D39/D44).
+  every request so a deletion shows without a restart (D39/D44) — 30 tests across the three.
 
 Moving deletion into the backend service, the `/delete` endpoint, the deletion dialog in the
 frontend, and the later rebase onto a regrouped statements file (D45–D47) were built by a
 teammate on top of this work.
-
